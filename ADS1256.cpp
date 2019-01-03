@@ -72,7 +72,14 @@ void ADS1256::sendCommand(unsigned char reg) {
   CSON();
   waitDRDY();
   bcm2835_spi_transfer(reg);
-  bcm2835_delayMicroseconds(t11);  // t11
+  bcm2835_delayMicroseconds(t11);  // t11 tiempo entre comandos
+  CSOFF();
+}
+void ADS1256::sendCommandsinDrdy(unsigned char reg) {
+  CSON();
+  //waitDRDY();
+  bcm2835_spi_transfer(reg);
+  bcm2835_delayMicroseconds(t11);  // t11 tiempo entre comandos
   CSOFF();
 }
 
@@ -205,8 +212,8 @@ void ADS1256::setChannel(unsigned char AIN_P, unsigned char AIN_N) {
 
   CSON();
   writeRegister(MUX, MUX_CHANNEL);
-  sendCommand(SYNC);
-  sendCommand(WAKEUP);
+  sendCommandsinDrdy(SYNC);
+  sendCommandsinDrdy(WAKEUP);
   CSOFF();
 }
 

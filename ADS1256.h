@@ -87,6 +87,7 @@ class ADS1256 {
   void writeRegister(unsigned char reg, unsigned char wdata);
   unsigned char readRegister(unsigned char reg);
   void sendCommand(unsigned char cmd);
+  void sendCommandsinDrdy(unsigned char cmd);
   float readChannel();
   void setConversionFactor(float val);
   void setChannel(unsigned char channel);
