@@ -93,8 +93,6 @@ class ADS1256 {
   void setConversionFactor(float val);
   void setChannel(unsigned char channel);
   void setChannel(unsigned char AIP, unsigned char AIN);
-  void setChannel_timeout(unsigned char channel);
-  void setChannel_timeout(unsigned char AIP, unsigned char AIN);
   void begin(unsigned char drate, unsigned char gain, bool bufferenable);
   void reboot(unsigned char drate, unsigned char gain);
   bool waitDRDY(unsigned int micros);
