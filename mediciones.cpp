@@ -63,6 +63,7 @@ float recolecta_Data(ADS1256 & ads24,ADS1115 & ads16,float ** data)
 	// programa que recolecta datos de dV para 5 canales
     int i=0;
 	muestras_anteriores=0;
+	ads24.waitDRDY(); 
 	ads24.setChannel(0,1);
 	clock_gettime( CLOCK_REALTIME, &ts1 );
 
