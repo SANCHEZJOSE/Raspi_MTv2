@@ -2,14 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <bcm2835.h>
-#include <iostream>
-#include <chrono>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-//using namespace std::chrono_literals;
-
 
 ADS1256::ADS1256(int clockspdMhz, float vref, bool usoReset,float t11in,float t6in) {
 t11=t11in;
@@ -91,9 +83,11 @@ void ADS1256::setConversionFactor(float val) { _conversionFactor = val; }
   //CSON();
   bcm2835_spi_transfer(RDATA);
   bcm2835_delayMicroseconds(t6);  // t6 delay
+
   _highByte = bcm2835_spi_transfer(WAKEUP);
   _midByte = bcm2835_spi_transfer(WAKEUP);
   _lowByte = bcm2835_spi_transfer(WAKEUP);
+
   //CSOFF();
 }*/
 
@@ -137,13 +131,14 @@ float ADS1256::read_float32() {
   long value = read_int32();
   return (float)value;
 }
+
 // Channel switching for single ended mode. Negative input channel are
 // automatically set to AINCOM
 void ADS1256::setChannel(unsigned char channel) { setChannel(channel, -1); }
 
 // Channel Switching for differential mode. Use -1 to set input channel to
 // AINCOM
-void ADS1256::setChannel(unsigned char AIN_P, unsigned char AIN_N ) {
+void ADS1256::setChannel(unsigned char AIN_P, unsigned char AIN_N) {
   unsigned char MUX_CHANNEL;
   unsigned char MUXP;
   unsigned char MUXN;
@@ -215,38 +210,6 @@ void ADS1256::setChannel(unsigned char AIN_P, unsigned char AIN_N ) {
   CSOFF();
 }
 
-
-
-// modificardo de Channel con timeout
-// Channel switching for single ended mode. Negative input channel are
-// automatically set to AINCOM
-void ADS1256::setChannel_timeout(unsigned char channel) { setChannel_timeout(channel, -1); }
-//
-void ADS1256::setChannel_timeout(unsigned char AIN_P, unsigned char AIN_N){
-    std::mutex m;
-    std::condition_variable cv;
-
-    std::thread t([&cv,AIN_P , AIN_N ](){
-      setChannel( AIN_P , AIN_N); // aqui molesta el ")" final en la compilacion. 
-				// ADS1256.cpp:230:32: error: ‘this’ was not captured for this lambda function
-				//       setChannel( AIN_P , AIN_N);
-				//                                ^
-		
-      cv.notify_one();
-    });
-
-    t.detach();
-
-    {
-        std::unique_lock<std::mutex> l(m);
-        if(cv.wait_for(l,std::chrono::seconds(1)) == std::cv_status::timeout) 
-            throw std::runtime_error("Timeout for change channel");
-    }
-
-    //return 1;
-}
-
-
 void ADS1256::begin(unsigned char drate, unsigned char gain,bool buffenable) {
   _pga = 1 << gain;
   sendCommand(SDATAC);  // send out SDATAC command to stop continous reading mode.
@@ -264,26 +227,6 @@ void ADS1256::begin(unsigned char drate, unsigned char gain,bool buffenable) {
   waitDRDY();
     // wait ADS1256 to settle after self calibration
 }
-void ADS1256::reboot(unsigned char drate, unsigned char gain) {
-  CSON();
-    bcm2835_gpio_write(pinReset,LOW);
-    bcm2835_delayMicroseconds(10000);
-    // reset a high
-    bcm2835_gpio_write(pinReset,HIGH);
-    bcm2835_delayMicroseconds(1000000);
-    bcm2835_spi_transfer(RESET);
-    bcm2835_delayMicroseconds(200000);
-CSOFF();
-  sendCommand(SDATAC);  // send out SDATAC command to stop continous reading mode.
-  writeRegister(DRATE, drate);  // write data rate register
-  uint8_t bytemask =0x07;//B00000111;
-  uint8_t adcon = readRegister(ADCON);
-  uint8_t byte2send = (adcon & ~bytemask) | gain;
-  writeRegister(ADCON, byte2send);
-  sendCommand(SELFCAL);  // perform self calibration
-  waitDRDY();
-    // wait ADS1256 to settle after self calibration
-}
 
 void ADS1256::CSON() {
   bcm2835_gpio_write(pinCS,LOW);
@@ -293,17 +236,7 @@ void ADS1256::CSOFF() {
  bcm2835_gpio_write(pinCS,HIGH);
 }
 
-bool ADS1256::waitDRDY(unsigned int micros) {
-	gettimeofday(&tiempo,NULL);
-	uint64_t tiempoInicial=(uint64_t)tiempo.tv_sec * (uint64_t)1000000 + (uint64_t)(tiempo.tv_usec) ;
-	while(bcm2835_gpio_lev(pinDRDY)){
-		gettimeofday (&tiempo, NULL) ;
-		uint64_t tiempoActual=(uint64_t)tiempo.tv_sec * (uint64_t)1000000 + (uint64_t)(tiempo.tv_usec);
-		if((uint32_t)(tiempoActual - tiempoInicial) >= micros)
-			return true; //Timeout
-		}
-	return false;//se cumplio dentro del tiempo
-}
 void ADS1256::waitDRDY() {
-	while(bcm2835_gpio_lev(pinDRDY));
+  while (bcm2835_gpio_lev(pinDRDY))
+  ;
 }

@@ -8,5 +8,5 @@ echo "Modelo compilado"
 fecha=`date +%Y%m%d_%H:%M:%S`
 echo $fecha
 # Paso 3, corre el codigo
-#sudo ./prog.o datos${fecha}.txt
+sudo ./prog.o datos${fecha}.txt
 # TEST 

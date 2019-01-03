@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <bcm2835.h>
-#include <sys/time.h>
-#include <stdint.h>
 // Pines GPIO con BCM2835 http://www.airspayce.com/mikem/bcm2835/group__constants.html#gga63c029bd6500167152db4e57736d0939a1517b7c4655c6717f16b83effd033a9e
 #define pinReset 17 
 #define pinCS 27
@@ -94,8 +92,6 @@ class ADS1256 {
   void setChannel(unsigned char channel);
   void setChannel(unsigned char AIP, unsigned char AIN);
   void begin(unsigned char drate, unsigned char gain, bool bufferenable);
-  void reboot(unsigned char drate, unsigned char gain);
-  bool waitDRDY(unsigned int micros);
   void waitDRDY();
   void setGain(uint8_t gain);
   ~ADS1256() {bcm2835_spi_end();}
@@ -110,7 +106,6 @@ class ADS1256 {
   unsigned char _pga;
   float _VREF;
   float _conversionFactor;
-  struct timeval tiempo;
 };
 #endif
 /*bcm2835_spi_begin() Inicializa el módulo de SPI.

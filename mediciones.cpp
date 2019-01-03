@@ -10,8 +10,7 @@
 int clock_divisor=256;///Divisor Reloj (bcm2835 250 Mhz)
 	
 float vRef = 2.5,tiempo,dt,minutos_Muestro=20,save_min=5,ponderacion=0.0000625;///Volt. de referencia por defecto,Variable t(us)
-int filas,columnas=5,sps=150,muestras_anteriores,blink=2,flag=0;
-unsigned int time_out=2000;//tiempo en microsegundos 
+int filas,columnas=5,sps=150,muestras_anteriores,blink=2;
 float **datos;///doble puntero para matriz dinamica
 bool estado=false;
 //funciones y macros
@@ -66,25 +65,19 @@ float recolecta_Data(ADS1256 & ads24,ADS1115 & ads16,float ** data)
 	muestras_anteriores=0;
 	ads24.setChannel(0,1);
 	clock_gettime( CLOCK_REALTIME, &ts1 );
-	bool check_timeout=false;
+
 	while(i < filas){
-		flag=i;
 		ads16.Differential_0_1(); 
-		if ((check_timeout=ads24.waitDRDY(time_out))){//recibe como parametros en tiempo en microsegundos(aprox) para timeout
-			break;
-			}
+		ads24.waitDRDY(); 
 		ads24.setChannel(2,3);
 		data[i][0]=ads24.readChannel(); // Salida de los pines AIN0 y AIN1
 		data[i][3]=(float)ads16.getConversion()*ponderacion;// Salida de los pines AIN0 y AIN1 de ads1115
         ads16.Differential_2_3();
-		if ((check_timeout=ads24.waitDRDY(time_out))){
-			break;
-			}
+		ads24.waitDRDY();
 		ads24.setChannel(4,5);
 		data[i][1]=ads24.readChannel(); //// Salida de los pines AIN2 y AIN3     
 		data[i][4]=(float)ads16.getConversion()*ponderacion;//Salida de los pines AIN2 y AIN3 de ads1115   
-		if ((check_timeout=ads24.waitDRDY(time_out))){
-			break;}
+		ads24.waitDRDY();
 		ads24.setChannel(0,1); 
 		data[i][2]=ads24.readChannel();  // Salida de los pines AIN4 y AIN5
 				if(i-muestras_anteriores>=sps/blink){
@@ -98,21 +91,14 @@ float recolecta_Data(ADS1256 & ads24,ADS1115 & ads16,float ** data)
 		else{ bcm2835_gpio_write(12,LOW);}
 	    i++;
 		}
-		if(check_timeout){
-			printf("TimeOUT!!\nReiniciando...");fflush(stdout);
-			ads24.reboot(ADS1256_DRATE_500SPS,ADS1256_GAIN_1);///Configuracion
-			printf("Retomando lectura\n");
-			}
-		else{
-			flag=filas;}
 		clock_gettime( CLOCK_REALTIME, &ts2 );
 		tiempo=(float) ((1.0*ts2.tv_nsec - ts1.tv_nsec*1.0)*1e-9 +1.0*ts2.tv_sec - 1.0*ts1.tv_sec )*1000.0;
-	    return(tiempo/(float)(flag+1));
+	    return(tiempo/(float)filas);
 }
 float save_data(float **matriz,float delta,float t_0,char * name){
 int aux;
 FILE * archivo=fopen(name,"a+");
-for (int i = 0; i < flag; i++){
+for (int i = 0; i < filas; i++){
 	     fprintf(archivo,"%.4f\t",delta*i+t_0);
 	for (int j = 0; j <columnas; j++){
         fprintf(archivo,"%.9f\t",matriz[i][j]);}
