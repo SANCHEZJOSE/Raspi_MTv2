@@ -12,7 +12,7 @@ int clock_divisor=256;///Divisor Reloj (bcm2835 250 Mhz)
 float vRef = 2.5,tiempo,dt,minutos_Muestro=20,save_min=5,ponderacion=0.0000625;///Volt. de referencia por defecto,Variable t(us)
 int filas,columnas=5,sps=150,muestras_anteriores,blink=2;
 float **datos;///doble puntero para matriz dinamica
-bool estado=false;
+bool estado=false,inicio=true;
 //funciones y macros
 void setup(void);
 float save_data(float **,float,float,char *);///Permite guardar los datos en un archivo .txt
@@ -32,7 +32,7 @@ int main(int argc,char * argv[])
 	printf("ADC 16 Bits begin\n");
 	ADS1256 adc24b(clock_divisor,vRef,true,4,8);///Pre config. de prot. SPI
 	printf("ADC 24 Bits begin\n");
-    adc24b.begin(ADS1256_DRATE_500SPS,ADS1256_GAIN_1,false);///Configuracion
+    adc24b.begin(ADS1256_DRATE_1000SPS,ADS1256_GAIN_1,false);///Configuracion
 	printf("Creacion Matriz dinamica\n");
 	filas=sps*60.0*save_min;
 	    datos = new float* [filas];///vector de punteros
@@ -63,10 +63,12 @@ float recolecta_Data(ADS1256 & ads24,ADS1115 & ads16,float ** data)
 	// programa que recolecta datos de dV para 5 canales
     int i=0;
 	muestras_anteriores=0;
-	ads24.waitDRDY(); 
-	ads24.setChannel(0,1);
+	if (inicio)
+	{
+		ads24.waitDRDY(); 
+		ads24.setChannel(0,1);
+	}
 	clock_gettime( CLOCK_REALTIME, &ts1 );
-
 	while(i < filas){
 		ads16.Differential_0_1(); 
 		ads24.waitDRDY(); 
@@ -94,6 +96,7 @@ float recolecta_Data(ADS1256 & ads24,ADS1115 & ads16,float ** data)
 		}
 		clock_gettime( CLOCK_REALTIME, &ts2 );
 		tiempo=(float) ((1.0*ts2.tv_nsec - ts1.tv_nsec*1.0)*1e-9 +1.0*ts2.tv_sec - 1.0*ts1.tv_sec )*1000.0;
+		inicio=false;
 	    return(tiempo/(float)filas);
 }
 float save_data(float **matriz,float delta,float t_0,char * name){
